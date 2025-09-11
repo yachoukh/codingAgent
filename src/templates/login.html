@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}
+Log In - ReleCloud
+{% endblock %}
+
+{% block content %}
+<h1 class="display-4 tk-elevon">Log In</h1>
+<p class="lead">Sign in to your account to request information about our space cruises.</p>
+
+{% if error %}
+<div class="alert alert-danger" role="alert">
+    {{ error }}
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('login') }}">
+    <div class="form-group mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+    </div>
+    
+    <div class="form-group mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Log In</button>
+    <a href="{{ url_for('signup_form') }}" class="btn btn-secondary">Don't have an account? Sign Up</a>
+</form>
+{% endblock %}
