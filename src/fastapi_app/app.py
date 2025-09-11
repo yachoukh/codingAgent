@@ -3,22 +3,22 @@ import pathlib
 from typing import Annotated
 
 from azure.monitor.opentelemetry import configure_azure_monitor
-from fastapi import FastAPI, Form, Request, Depends, HTTPException, status
+from fastapi import Depends, FastAPI, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from starlette.middleware.sessions import SessionMiddleware
 
-from .models import Cruise, Destination, InfoRequest, User, engine
 from .auth import (
-    authenticate_user, 
-    get_password_hash, 
-    get_current_user, 
-    get_user_by_username, 
+    authenticate_user,
+    get_current_user,
+    get_password_hash,
     get_user_by_email,
-    require_authentication
+    get_user_by_username,
+    require_authentication,
 )
+from .models import Cruise, Destination, InfoRequest, User, engine
 
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
     configure_azure_monitor()
@@ -50,7 +50,14 @@ def about(request: Request, current_user: User = Depends(get_current_user)):
 def destinations(request: Request, current_user: User = Depends(get_current_user)):
     with Session(engine) as session:
         all_destinations = session.exec(select(Destination)).all()
-    return templates.TemplateResponse("destinations.html", {"request": request, "destinations": all_destinations, "current_user": current_user})
+    return templates.TemplateResponse(
+        "destinations.html", 
+        {
+            "request": request, 
+            "destinations": all_destinations, 
+            "current_user": current_user
+        }
+    )
 
 
 @app.get("/destination/{pk}", response_class=HTMLResponse)
@@ -58,7 +65,13 @@ def destination_detail(request: Request, pk: int, current_user: User = Depends(g
     with Session(engine) as session:
         destination = session.exec(select(Destination).where(Destination.id == pk)).first()
         return templates.TemplateResponse(
-            "destination_detail.html", {"request": request, "destination": destination, "cruises": destination.cruises, "current_user": current_user}
+            "destination_detail.html", 
+            {
+                "request": request, 
+                "destination": destination, 
+                "cruises": destination.cruises, 
+                "current_user": current_user
+            }
         )
 
 
@@ -67,7 +80,13 @@ def cruise_detail(request: Request, pk: int, current_user: User = Depends(get_cu
     with Session(engine) as session:
         cruise = session.exec(select(Cruise).where(Cruise.id == pk)).first()
         return templates.TemplateResponse(
-            "cruise_detail.html", {"request": request, "cruise": cruise, "destinations": cruise.destinations, "current_user": current_user}
+            "cruise_detail.html", 
+            {
+                "request": request, 
+                "cruise": cruise, 
+                "destinations": cruise.destinations, 
+                "current_user": current_user
+            }
         )
 
 
@@ -75,11 +94,22 @@ def cruise_detail(request: Request, pk: int, current_user: User = Depends(get_cu
 def info_request(request: Request, current_user: User = Depends(require_authentication)):
     with Session(engine) as session:
         all_cruises = session.exec(select(Cruise)).all()
-        return templates.TemplateResponse("info_request_create.html", {"request": request, "cruises": all_cruises, "current_user": current_user})
+        return templates.TemplateResponse(
+            "info_request_create.html", 
+            {
+                "request": request, 
+                "cruises": all_cruises, 
+                "current_user": current_user
+            }
+        )
 
 
 @app.post("/info_request/", response_model=InfoRequest)
-def create_info_request(request: Request, info_request: Annotated[InfoRequest, Form()], current_user: User = Depends(require_authentication)):
+def create_info_request(
+    request: Request, 
+    info_request: Annotated[InfoRequest, Form()], 
+    current_user: User = Depends(require_authentication)
+):
     with Session(engine) as session:
         session.add(info_request)
         session.commit()

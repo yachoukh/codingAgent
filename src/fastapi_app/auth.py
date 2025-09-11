@@ -5,12 +5,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
 
-from .models import User, engine
+from .models import User
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -48,6 +48,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 def get_user_by_username(username: str) -> Optional[User]:
     """Get user by username from database."""
+    from .models import engine  # Import when needed to get current engine
+    
     with Session(engine) as session:
         user = session.exec(select(User).where(User.username == username)).first()
         return user
@@ -55,6 +57,8 @@ def get_user_by_username(username: str) -> Optional[User]:
 
 def get_user_by_email(email: str) -> Optional[User]:
     """Get user by email from database."""
+    from .models import engine  # Import when needed to get current engine
+    
     with Session(engine) as session:
         user = session.exec(select(User).where(User.email == email)).first()
         return user
@@ -70,7 +74,9 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
     return user
 
 
-def get_current_user_from_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[User]:
+def get_current_user_from_token(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> Optional[User]:
     """Get current user from JWT token in Authorization header."""
     if not credentials:
         return None
@@ -93,12 +99,17 @@ def get_current_user_from_session(request: Request) -> Optional[User]:
     if not user_id:
         return None
     
+    from .models import engine  # Import when needed to get current engine
+    
     with Session(engine) as session:
         user = session.get(User, user_id)
         return user
 
 
-def get_current_user(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[User]:
+def get_current_user(
+    request: Request, 
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> Optional[User]:
     """Get current user from session or token."""
     # Try session first
     user = get_current_user_from_session(request)
@@ -109,7 +120,10 @@ def get_current_user(request: Request, credentials: Optional[HTTPAuthorizationCr
     return get_current_user_from_token(credentials)
 
 
-def require_authentication(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> User:
+def require_authentication(
+    request: Request, 
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> User:
     """Require user to be authenticated."""
     user = get_current_user(request, credentials)
     if not user:
