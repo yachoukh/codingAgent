@@ -64,6 +64,16 @@ class Cruise(SQLModel, table=True):
         return f"{self.name}"
 
 
+class User(SQLModel, table=True):
+    id: typing.Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True)
+    email: str = Field(index=True, unique=True)
+    hashed_password: str
+
+    def __str__(self):
+        return f"{self.username}"
+
+
 class InfoRequest(SQLModel, table=True):
     id: typing.Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True)
