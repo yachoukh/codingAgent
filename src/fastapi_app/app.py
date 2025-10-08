@@ -1,10 +1,12 @@
+import io
 import os
 import pathlib
 from typing import Annotated
 
+import qrcode
 from azure.monitor.opentelemetry import configure_azure_monitor
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
@@ -80,3 +82,30 @@ def create_info_request(request: Request, info_request: Annotated[InfoRequest, F
                 "message": "Information request submitted.",
             },
         )
+
+
+@app.get("/qrcode")
+def generate_qr_code(request: Request):
+    # Generate QR code for the info request page URL
+    base_url = str(request.base_url)
+    info_request_url = f"{base_url}info_request/"
+    
+    # Create QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(info_request_url)
+    qr.make(fit=True)
+    
+    # Create image
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Save to bytes buffer
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    
+    return StreamingResponse(buf, media_type="image/png")
